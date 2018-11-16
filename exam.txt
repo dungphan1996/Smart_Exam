@@ -1,0 +1,243 @@
+pragma solidity ^0.4.25;
+
+contract Manage_Exam {
+    //**********************************//
+    //       Host of Examination        //
+    //**********************************//
+    
+    address public Host_Exam;
+    
+    function Manage_Exam(){
+        Host_Exam = msg.sender;
+    }
+
+    modifier onlyHostExam(){
+        require(Host_Exam == msg.sender);
+        _; 
+    }
+    
+    //*********Examinee*********//
+    
+    struct ID_Examinee{
+        //General Information//
+        string Name;
+        string DateOfBirth;
+        string Address;
+        string ID;
+        //Exam Information//
+        mapping(string =>string) HashAddress_CompletedExam;
+        mapping(address => bool) Exeminer_Is_Accepted;
+        mapping(string => mapping( uint => address)) Examiners;
+        mapping(string =>mapping( uint => string)) HashAddress_ExamMark;
+        mapping(string => string) HashAddress_FinalExamMark;
+    }
+    
+    mapping(uint=>ID_Examinee) ID_Examinees;
+    
+    //General Information Register //
+    function Examinee_Register(uint _ID_Examinee, string _Name, string _DateOfBirth, string _Address, string _ID) onlyHostExam public{
+        ID_Examinees[_ID_Examinee].Name = _Name;
+        ID_Examinees[_ID_Examinee].DateOfBirth = _DateOfBirth;
+        ID_Examinees[_ID_Examinee].Address = _Address;
+        ID_Examinees[_ID_Examinee].ID = _ID;
+    }
+    //Get General Information//
+    function Get_Examinee(uint _ID_Examinee) view public returns (string,string,string,string){
+        return (ID_Examinees[_ID_Examinee].Name,ID_Examinees[_ID_Examinee].DateOfBirth,ID_Examinees[_ID_Examinee].Address,ID_Examinees[_ID_Examinee].ID);
+    }
+    
+    //*********Board Of Examiner*********//
+    
+    struct Board_Examiner{
+        //General Infomation//
+        string Name;
+        string DateOfBirth;
+        string Address;
+        string ID;
+        string Name_Of_Board;
+        //Status of Availability//
+        bool Is_Accepted;
+    }
+    
+    mapping (address=>Board_Examiner) public Board_Examiners;
+    
+    //General Information and Status of Availability Register//
+    function Board_Examiner_Register(address _Account, string _Name, string _DateOfBirth, string _Address, string _ID, string _Name_Of_Board) onlyHostExam public{
+        Board_Examiners[_Account].Name = _Name;
+        Board_Examiners[_Account].DateOfBirth = _DateOfBirth;
+        Board_Examiners[_Account].Address = _Address;
+        Board_Examiners[_Account].ID = _ID;
+        Board_Examiners[_Account].Name_Of_Board = _Name_Of_Board;
+        Board_Examiners[_Account].Is_Accepted = true;
+    }   
+    
+    //Turn Off Status of Availability// 
+    function TurnOFF_Board_Examiner(address _Account) public{
+        Board_Examiners[_Account].Is_Accepted = false;
+    }
+    
+    //Turn On Status of Availability//
+    function TurnON_Board_Examiner(address _Account) public{
+        Board_Examiners[_Account].Is_Accepted = true;
+    }
+    //Get Information//
+    function Get_Board_Examiner(address _Account) view public returns (string,string,string,string,bool){
+        return (Board_Examiners[_Account].Name,Board_Examiners[_Account].DateOfBirth,Board_Examiners[_Account].Address,Board_Examiners[_Account].ID,Board_Examiners[_Account].Is_Accepted);
+    }
+    
+    //*********Exam Organizer*********//
+    
+    struct Exam_Organizer{
+        //General Infomation//
+        string Name;
+        string DateOfBirth;
+        string Address;
+        string ID;
+        string Name_Of_Board;
+        //Status of Availability//
+        bool Is_Accepted;
+    }
+    
+    mapping (address=>Exam_Organizer) public Exam_Organizers;
+    
+    //General Information and Status of Availability Register//
+    function Exam_Organizer_Register(address _Account, string _Name, string _DateOfBirth, string _Address, string _ID) onlyHostExam public{
+        Exam_Organizers[_Account].Name = _Name;
+        Exam_Organizers[_Account].DateOfBirth = _DateOfBirth;
+        Exam_Organizers[_Account].Address = _Address;
+        Exam_Organizers[_Account].ID = _ID;
+        Exam_Organizers[_Account].Is_Accepted = true;
+    }    
+    
+    //Turn Off Status of Availability// 
+    function TurnOFF_Exam_Organizer(address _Account) public{
+        Exam_Organizers[_Account].Is_Accepted = false;
+    }
+    
+    //Turn On Status of Availability//
+    function TurnON_Exam_Organizer(address _Account) public{
+        Exam_Organizers[_Account].Is_Accepted = true;
+    }
+    
+    //Get Information//
+    function Get_Exam_Organizer(address _Account) view public returns (string,string,string,string,bool){
+        return (Exam_Organizers[_Account].Name,Exam_Organizers[_Account].DateOfBirth,Exam_Organizers[_Account].Address,Exam_Organizers[_Account].ID,Exam_Organizers[_Account].Is_Accepted);
+    }
+    
+    //*********Exam*********//
+    struct Exam{
+         mapping(string=>string) HashAddress_Subject;
+         mapping(uint =>ID_Examinee) ID_Examinees;
+         uint Score;
+         uint Final_Mark;
+    }
+    
+    mapping(string => Exam) Exams;
+    
+    function Add_Final_Sample_Exam_Paper(string _Exam, string _Subject, string _HashAddress) onlyHostExam public{
+        Exams[_Exam].HashAddress_Subject[_Subject] = _HashAddress;
+    }
+    
+    function Get_Exam_Paper(string _Exam, string _Subject) view public returns (string){
+        return Exams[_Exam].HashAddress_Subject[_Subject];
+    }
+    
+    //**********************************//
+    //   Organizer of Examination       //
+    //**********************************//
+    
+    modifier onlyExamOrganizer(){
+        require(Exam_Organizers[msg.sender].Is_Accepted == true);
+        _;
+    }
+    
+    function Complete_Exam(string _Exam, uint _ID_Examinee, string _Subject,string _HashAddress) onlyExamOrganizer public{
+        Exams[_Exam].ID_Examinees[_ID_Examinee].HashAddress_CompletedExam[_Subject] = _HashAddress;
+    }
+    
+    function Get_Completed_Exam(string _Exam,uint _ID_Examinee, string _Subject) view public returns (string){
+        return Exams[_Exam].ID_Examinees[_ID_Examinee].HashAddress_CompletedExam[_Subject];
+    }
+    
+    //**********************************//
+    //        Board of Examiner         //
+    //**********************************//
+    
+    struct Examiner{
+        string Name;
+        string DateOfBirth;
+        string Address;
+        string ID;
+        bool Is_Accepted;
+        string Name_Of_Board;
+    }
+    
+    mapping (address=>Examiner) Examiners;
+    
+    modifier onlyBoardExaminer(){
+        require(Board_Examiners[msg.sender].Is_Accepted == true);
+        _;
+    }
+    
+    modifier onlyExaminer(string _Exam, uint _ID_Examinee){
+        require(Examiners[msg.sender].Is_Accepted == true);
+        require(Exams[_Exam].ID_Examinees[_ID_Examinee].Exeminer_Is_Accepted[msg.sender] == true);
+        _;
+    }
+    
+    //General Information and Status of Availability Register//
+    function Examiner_Register(address _Account, string _Name, string _DateOfBirth, string _Address, string _ID) onlyBoardExaminer public{
+        Examiners[_Account].Name = _Name;
+        Examiners[_Account].DateOfBirth = _DateOfBirth;
+        Examiners[_Account].Address = _Address;
+        Examiners[_Account].ID = _ID;
+        Examiners[_Account].Name_Of_Board = Board_Examiners[msg.sender].Name_Of_Board; 
+        Examiners[_Account].Is_Accepted = true;
+    }   
+    //Get General Information//
+    function Get_Examiner(address _Account) view public returns (string,string,string,string,bool){
+        return (Examiners[_Account].Name,Examiners[_Account].DateOfBirth,Examiners[_Account].Address,Examiners[_Account].ID,Examiners[_Account].Is_Accepted);
+    }
+    
+     //Turn Off Status of Availability// 
+    function TurnOFF_Examiner(address _Account) public{
+        Examiners[_Account].Is_Accepted = false;
+    }
+    
+    //Turn On Status of Availability//
+    function TurnON_Exam_Examiner(address _Account) public{
+        Examiners[_Account].Is_Accepted = true;
+    }
+    
+    //Turn On Mark Status of Availability//
+    function TurnON_Mark(address _Account, string _Exam, uint _ID_Examinee) onlyBoardExaminer public{
+        Exams[_Exam].ID_Examinees[_ID_Examinee].Exeminer_Is_Accepted[_Account] = true;
+    }
+    
+    //Turn Off Mark Status of Availability//
+    function TurnOFF_Mark(address _Account, string _Exam, uint _ID_Examinee) onlyBoardExaminer public{
+        Exams[_Exam].ID_Examinees[_ID_Examinee].Exeminer_Is_Accepted[_Account] = false;
+    }
+    
+    //Mark//
+    function Mark(string _Exam, uint _ID_Examinee, string _Subject,string _HashAddress ,uint _index, uint _Score) onlyExaminer(_Exam,_ID_Examinee) public{
+        Exams[_Exam].ID_Examinees[_ID_Examinee].HashAddress_ExamMark[_Subject][_index] = _HashAddress;
+        Exams[_Exam].ID_Examinees[_ID_Examinee].Examiners[_Subject][_index] = msg.sender;
+    }
+    
+    //Get Mark//
+    function Get_Mark(string _Exam,uint _ID_Examinee, string _Subject, uint _index) view public returns (string,address){
+        return (Exams[_Exam].ID_Examinees[_ID_Examinee].HashAddress_ExamMark[_Subject][_index],Exams[_Exam].ID_Examinees[_ID_Examinee].Examiners[_Subject][_index]);
+    }
+    
+    //Final Mark//
+    function FinalMark(string _Exam, uint _ID_Examinee, string _Subject,string _HashAddress, uint _Final_Mark) onlyBoardExaminer public{
+        Exams[_Exam].ID_Examinees[_ID_Examinee].HashAddress_FinalExamMark[_Subject] = _HashAddress;
+    }
+    
+    //Get Final Mark//
+    function Get_FinalMark(string _Exam,uint _ID_Examinee, string _Subject) view public returns (string){
+        return Exams[_Exam].ID_Examinees[_ID_Examinee].HashAddress_FinalExamMark[_Subject];
+    }
+    
+}
